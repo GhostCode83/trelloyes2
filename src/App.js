@@ -1,82 +1,91 @@
-import React, { Component } from 'react';
-import List from './composition/List.js'
-import './App.css';
-import store from './store'
+import React, { Component } from 'react'
+import List from './composition/List'
+import STORE from './store'
+import './App.css'
 
-class App extends Component {
-  constructor(props) {
-    super(props)
-    this.state = {
-      allCards: store.allCards,
-      lists: store.lists
-    }
-  } 
-  
-  handleDeleteItem = (id) => {
-    let newAllCards = this.state.allCards
-   // let newLists = this.state.lists
-    //newAllCards = omit(newAllCards, id)
-     function omit(newAllCards, id) {
-       let {[id]: _, ...rest} = newAllCards;
-       console.log(rest)
-       return rest
-     }
-    /*for (let i = 0; i < this.state.lists.length; i++){
-      for (let j = 0; j < this.state.lists[i].cardIds.length; j++) {
-        if (this.state.lists[i].cardIds[j] === id){
-        
-           console.log(this.state.lists[i].cardIds[j], id)
-          let newLists = this.state.lists[i].cardIds[j]
-          let newState = function omit(newLists, id).omit(newAllCards, id)
-          //newLists.splice(this.state.lists[i].cardIds[j])
-          console.log(newState)
-        }
-      }*/
-      //this.state.lists.cardIds.map(function(item, index){
-        //console.log(item, index, id)
-        //if ( id === this.state.list[index])
-      //}
- // )
-    /*for (let i = 0; i < this.state.lists; i++) {
-      for(let j = 0; j < this.state.lists.cardIds; j++) {
-        if (this.state.lists[i].cardIds[j] === this.state.lists[i].cardIds[id]) {
-          
-        }
-      }
-    }*/
-    // new logic that removes id from both 
-    //console.log(newAllCards)
-        //delete newAllCards[id]
-    //console.log(newAllCards)
-   // this.setState({
-      //allCards: newAllCards,
-      //lists: newLists
-    //  })
-  //}
+const newRandomCard = () => {
+  const id = Math.random().toString(36).substring(2, 4)
+    + Math.random().toString(36).substring(2, 4);
+  return {
+    id,
+    title: `Random Card ${id}`,
+    content: 'lorem ipsum',
+  }
 }
 
-  handleRandomItem = () => {
-    console.log('Random item rendered!')
-  }
+function omit(obj, keyToOmit) {
+  return Object.entries(obj).reduce(
+    (newObj, [key, value]) =>
+        key === keyToOmit ? newObj : {...newObj, [key]: value},
+    {}
+  );
+}
+
+class App extends Component {
+  state = {
+    store: STORE,
+  };
+
+  handleDeleteCard = (cardId) => {
+    const { lists, allCards } = this.state.store;
+
+    const newLists = lists.map(list => ({
+      ...list,
+      cardIds: list.cardIds.filter(id => id !== cardId)
+    }));
+
+    const newCards = omit(allCards, cardId);
+
+    this.setState({
+      store: {
+        lists: newLists,
+        allCards: newCards
+      }
+    })
+  };
+
+  handleAddCard = (listId) => {
+    const newCard = newRandomCard()
+
+    const newLists = this.state.store.lists.map(list => {
+      if (list.id === listId) {
+	return {
+          ...list,
+          cardIds: [...list.cardIds, newCard.id]
+        };
+      }
+      return list;
+    })
+
+    this.setState({
+      store: {
+        lists: newLists,
+        allCards: {
+          ...this.state.store.allCards,
+          [newCard.id]: newCard
+        }
+      }
+    })
+  };
 
   render() {
-    const listComponent = this.state.lists.map(list => (
-            <List
-              key={list.id}
-              header={list.header}
-              cards={list.cardIds.map(id => this.state.allCards[id])}
-              onDeleteItem = {this.handleDeleteItem}
-              onRandomItem = {this.handleRandomItem}
-            />
-          ))
-         // console.log(listComponent)
+    const { store } = this.state
     return (
       <main className='App'>
         <header className='App-header'>
           <h1>Trelloyes!</h1>
         </header>
         <div className='App-list'>
-    {listComponent}
+          {store.lists.map(list => (
+            <List
+              key={list.id}
+              id={list.id}
+              header={list.header}
+              cards={list.cardIds.map(id => store.allCards[id])}
+              onClickDelete={this.handleDeleteCard}
+              onClickAdd={this.handleAddCard}
+            />
+          ))}
         </div>
       </main>
     );
